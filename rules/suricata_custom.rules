@@ -1,0 +1,100 @@
+#Suricata rules 
+
+# ==========================
+# Linux – Atomic + Caldera
+# ==========================
+
+
+# T1033 - User Enumeration
+alert ip any any -> any any (msg:"[T1033] Suspicious Access to /etc/passwd"; content:"/etc/passwd"; sid:2001001; rev:3;)
+
+# T1082 - System Information Discovery
+alert ip any any -> any any (msg:"[T1082] System Info Leak (uname -a)"; content:"uname -a"; sid:2001002; rev:2;)
+alert ip any any -> any any (msg:"[T1082] Hostname Leak"; content:"hostname"; sid:2001003; rev:2;)
+alert ip any any -> any any (msg:"[T1082] OS Info Leak (lsb_release)"; content:"lsb_release"; sid:2001004; rev:2;)
+
+# T1016 - Network Configuration Discovery
+alert ip any any -> any any (msg:"[T1016] Network Config Discovery (ifconfig)"; content:"ifconfig"; sid:2001005; rev:2;)
+alert ip any any -> any any (msg:"[T1016] IP address command"; content:"ip addr"; sid:2001006; rev:2;)
+
+# T1518.001 - Security Software Discovery
+alert ip any any -> any any (msg:"[T1518.001] Package Enumeration (dpkg -l)"; content:"dpkg -l"; sid:2001007; rev:2;)
+alert ip any any -> any any (msg:"[T1518.001] AV Tool Check (which clamscan)"; content:"which clamscan"; sid:2001008; rev:2;)
+
+# T1059.004 - Bash Execution
+alert ip any any -> any any (msg:"[T1059.004] Bash Execution (bash -i)"; content:"bash -i"; sid:2001009; rev:2;)
+alert ip any any -> any any (msg:"[T1059.004] Bash Execution via /bin/sh"; content:"/bin/sh"; sid:2001010; rev:2;)
+
+# T1053.003 - Cron Job Execution
+alert ip any any -> any any (msg:"[T1053.003] Cron Job Scheduled"; content:"crontab"; sid:2001011; rev:2;)
+
+# T1105 - Remote File Copy
+alert ip any any -> any any (msg:"[T1105] File Transfer via wget"; content:"wget"; sid:2001012; rev:2;)
+alert http any any -> any any (msg:"[T1105] File Transfer via curl (User-Agent)"; content:"curl"; http_user_agent; sid:2001013; rev:2;)
+alert ip any any -> any any (msg:"[T1105] File Transfer via scp"; content:"scp"; sid:2001014; rev:2;)
+
+# T1027 - Obfuscation
+alert ip any any -> any any (msg:"[T1027] base64 encoding detected"; content:"base64"; sid:2001015; rev:2;)
+alert ip any any -> any any (msg:"[T1027] xxd obfuscation tool used"; content:"xxd"; sid:2001016; rev:2;)
+alert ip any any -> any any (msg:"[T1027] gzip compression command"; content:"gzip"; sid:2001017; rev:2;)
+
+# T1005 - Data from Local System
+alert ip any any -> any any (msg:"[T1005] Access to /etc/shadow"; content:"/etc/shadow"; sid:2001018; rev:2;)
+
+# T1003.008 - OS Credential Dumping
+alert ip any any -> any any (msg:"[T1003.008] Credential Dump via /etc/passwd"; content:"/etc/passwd"; sid:2001019; rev:2;)
+
+# T1119 - Automated Collection
+alert ip any any -> any any (msg:"[T1119] Automated File Collection (find /)"; content:"find /"; sid:2001020; rev:2;)
+
+# T1046 - Network Service Scanning (Port Scan)
+alert tcp any any -> any any (msg:"[T1046] Port Scan Detected"; flags:S; sid:1001012; rev:1;)
+
+# T1018 - ICMP Ping Sweep
+alert icmp any any -> any any (msg:"[T1018] ICMP Echo Request"; itype:8; sid:2001022; rev:1;)
+
+# T1071.001 - Suspicious HTTP User-Agent
+alert http any any -> any any (msg:"[T1071.001] Suspicious User-Agent (curl)"; content:"curl"; http_user_agent; sid:2001023; rev:1;)
+
+
+# ==========================
+# Windows – Atomic + Caldera
+# Suricata 7.x custom rules
+# ==========================
+
+# T1046: Port scan (SYN burst) - καθαρό, χωρίς warning
+alert tcp any any -> any 1:65535 (msg:"[T1046] Possible SYN scan (many SYNs by src)"; flags:S; flow:to_server,not_established; threshold:type both, track by_src, count 20, seconds 60; sid:2201046; rev:4;)
+
+# T1018: ICMP echo sweep
+alert icmp any any -> any any (msg:"[T1018] ICMP Echo sweep (multiple echo by src)"; itype:8; threshold:type both, track by_src, count 10, seconds 60; sid:2201018; rev:3;)
+
+# T1049: Network connections discovery (NBNS / LLMNR)
+alert udp any any -> any 137  (msg:"[T1049] NBNS traffic (name service discovery)"; dsize:>30; sid:2201049; rev:3;)
+alert udp any any -> any 5355 (msg:"[T1049] LLMNR query (name resolution discovery)"; dsize:>20; sid:2201050; rev:2;)
+
+# T1071.001: Web protocols (suspicious User-Agents)
+alert http any any -> any any (msg:"[T1071.001] Suspicious User-Agent (curl)";                flow:established,to_server; http.user_agent; content:"curl"; nocase; sid:2201701; rev:3;)
+alert http any any -> any any (msg:"[T1071.001] Suspicious User-Agent (WindowsPowerShell)";  flow:established,to_server; http.user_agent; content:"WindowsPowerShell"; nocase; sid:2201702; rev:3;)
+alert http any any -> any any (msg:"[T1071.001] Suspicious User-Agent (HttpBrowser)";        flow:established,to_server; http.user_agent; content:"HttpBrowser"; nocase; sid:2201703; rev:3;)
+alert http any any -> any any (msg:"[T1071.001] Suspicious User-Agent (Go-http-client/1.1)"; flow:established,to_server; http.user_agent; content:"Go-http-client/1.1"; nocase; sid:2201704; rev:3;)
+
+# T1041: Exfil over C2 (large HTTP POST)
+alert http any any -> any any (msg:"[T1041] Large HTTP POST (possible data exfil)"; flow:established,to_server; http.method; content:"POST"; http.header; pcre:"/Content-Length:\\s(100000|[1-9]\\d{5,})/i"; sid:2201041; rev:3;)
+
+# T1005: Data from Local System (file upload indicators)
+alert http any any -> any any (msg:"[T1005] HTTP exfil of local docs (filename indicator)"; flow:established,to_server; http.request_body; content:"filename="; nocase; pcre:"/filename\\s*=\\s*\"?.*\\.(docx|xlsx|pdf|pst|zip|7z|rar)\"?/i"; sid:2201005; rev:3;)
+
+# T1113: Screen capture exfil
+alert http any any -> any any (msg:"[T1113] Upload contains screenshot filename"; flow:established,to_server; http.request_body; content:"filename="; nocase; pcre:"/filename\\s*=\\s*\"?(screen(cap|shot)[^\"]*)\"?/i"; sid:2201113; rev:3;)
+
+# T1053.003: Scheduled task/job (lab IOC path)
+alert http any any -> any any (msg:"[T1053.003] Lab IOC: /cron beacon over HTTP"; flow:established,to_server; http.uri; content:"/cron"; nocase; sid:22053003; rev:3;)
+
+# T1486: Data Encrypted for Impact (encrypted-looking extensions in upload)
+alert http any any -> any any (msg:"[T1486] Upload of encrypted-looking extension (.locked/.encrypted/.enc)"; flow:established,to_server; http.request_body; content:"filename="; nocase; pcre:"/filename\\s*=\\s*\"?.*\\.(locked|encrypted|enc)\"?/i"; sid:2201486; rev:3;)
+
+# Caldera / Sandcat (Windows agent, typical 8888)
+alert http any any -> any 8888 (msg:"[Caldera/Sandcat] /file/download with platform: windows"; flow:established,to_server; http.uri; content:"/file/download"; nocase; http.header; content:"platform: windows"; nocase; sid:2209001; rev:3;)
+alert http any any -> any 8888 (msg:"[Caldera/Sandcat] sandcat.go requested via header";       flow:established,to_server; http.header; content:"file: sandcat.go"; nocase; sid:2209002; rev:3;)
+alert http any any -> any any (msg:"[Caldera/Sandcat] Suspicious UA (Go-http-client/1.1)";     flow:established,to_server; http.user_agent; content:"Go-http-client/1.1"; nocase; sid:2209003; rev:3;)
+alert http any any -> any 8888 (msg:"[Caldera/Sandcat] Beacon endpoint hit";                    flow:established,to_server; http.uri; content:"/beacon"; nocase; sid:2209004; rev:3;)
