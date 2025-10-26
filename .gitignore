@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+suricata_logs/
+snort_logs/
+*.zip
+__pycache__/
+node_modules/
