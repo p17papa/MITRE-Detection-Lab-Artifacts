@@ -1,7 +1,14 @@
-# Custom Detection Rules
+# rules/ — Custom detection rules
 
-- `rules/snort/` : Snort 3 rules (π.χ. custom.rules, classification.config, snort.lua include hints)
-- `rules/suricata/` : Suricata rules (π.χ. custom.rules, suricata.yaml fragments)
-- `rules/wazuh/` : Wazuh local rules (π.χ. local_rules.xml), FIM/auditd snippets
+Αυτός ο φάκελος περιέχει τα custom detection rules που χρησιμοποιήθηκαν για
+την αξιολόγηση MITRE/Atomic & CALDERA (network + host).
 
-> Συμβουλή: κρατάμε SIDs/Rule IDs ευθυγραμμισμένα με τα MITRE TTPs, ώστε να γίνεται tagging/correlation στο SIEM (Wazuh).
+## Περιεχόμενα
+| Filename               | Purpose / OS         | Notes |
+|------------------------|----------------------|-------|
+| snort_custom.rules     | Snort 3.x: Network rules (Linux + Windows) | Keep Snort-compatible syntax only; unique SIDs in range 240xxxx/230xxxx |
+| suricata_custom.rules  | Suricata: Network rules (UA, large POST, filename indicators) | Use Suricata-only options here (distance/within/nocase) |
+| wazuh_custom_R.xml     | Wazuh rules/decoders (host-level detection) | Host events: cron, bash_history, file creation |
+| README.md              | This file            |       |
+| SHA256SUMS.txt         | Checksums for datasets/yaml | Update when adding files |
+
