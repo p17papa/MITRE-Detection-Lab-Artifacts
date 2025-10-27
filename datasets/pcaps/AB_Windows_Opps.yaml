@@ -1,0 +1,116 @@
+id: 0873b4ca-bb63-4813-9aaa-6c9e3b1e4a34
+name: AB_Windows_Opps
+description: ---
+objective: 495a9828-cab1-44dd-a0ca-66e58177d8cc
+atomic_ordering:
+- 315cedf1-4a3a-4015-b63f-149d64bacbbc
+- b6b105b9-41dc-490b-bc5c-80d699b82ce8
+- c0da588f-79f0-4263-8998-7496b1a40596
+- e8017c46-acb8-400c-a4b5-b3362b5b5baa
+- b007fe0c-c6b0-4fda-915c-255bbc070de2
+- 47d08617-5ce1-424a-8cc5-c9c978ce6bf9
+abilities:
+ 315cedf1-4a3a-4015-b63f-149d64bacbbc:
+  name:  Emulate Administrator Tasks
+  tactic:  execution
+  technique_name:  "Command and Scripting Interpreter: PowerShell"
+  technique_id:  T1059.001
+  executors: 
+   - psh:
+     platform: windows
+     command: |
+       start powershell.exe -ArgumentList "-NoP","-StA","-ExecutionPolicy","bypass",".\Emulate-Administrator-Tasks.ps1"
+   - pwsh:
+     platform: windows
+     command: |
+       start powershell.exe -ArgumentList "-NoP","-StA","-ExecutionPolicy","bypass",".\Emulate-Administrator-Tasks.ps1"
+ b6b105b9-41dc-490b-bc5c-80d699b82ce8:
+  name:  Find OS Version
+  tactic:  discovery
+  technique_name:  "System Information Discovery"
+  technique_id:  T1082
+  executors: 
+   - psh:
+     platform: windows
+     command: |
+       [environment]::OSVersion.Version
+ c0da588f-79f0-4263-8998-7496b1a40596:
+  name:  Identify active user
+  tactic:  discovery
+  technique_name:  "System Owner/User Discovery"
+  technique_id:  T1033
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       whoami
+   - sh:
+     platform: linux
+     command: |
+       whoami
+   - psh:
+     platform: windows
+     command: |
+       $env:username
+   - cmd:
+     platform: windows
+     command: |
+       echo %username%
+ e8017c46-acb8-400c-a4b5-b3362b5b5baa:
+  name:  Network Interface Configuration
+  tactic:  discovery
+  technique_name:  "System Network Configuration Discovery"
+  technique_id:  T1016
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       sudo ifconfig
+   - sh:
+     platform: linux
+     command: |
+       sudo ifconfig
+   - psh:
+     platform: windows
+     command: |
+       ipconfig
+ b007fe0c-c6b0-4fda-915c-255bbc070de2:
+  name:  Copy Clipboard
+  tactic:  collection
+  technique_name:  "Clipboard Data"
+  technique_id:  T1115
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       pbpaste
+   - psh:
+     platform: windows
+     command: |
+       Get-Clipboard -raw
+   - pwsh:
+     platform: windows
+     command: |
+       Get-Clipboard -raw
+   - sh:
+     platform: linux
+     command: |
+       xclip -o
+ 47d08617-5ce1-424a-8cc5-c9c978ce6bf9:
+  name:  Leave note
+  tactic:  impact
+  technique_name:  "Defacement"
+  technique_id:  T1491
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       echo "proof that this machine was hacked." > message.txt
+   - sh:
+     platform: linux
+     command: |
+       echo "proof that this machine was hacked." > message.txt
+   - psh:
+     platform: windows
+     command: |
+       Set-Content -Path 'message.txt' -Value 'proof that this machine was hacked.'

