@@ -1,0 +1,254 @@
+# =====================================================================
+# all.rules — Snort 3 custom rules (Atomic + Caldera, Win + Linux)
+# =====================================================================
+
+# -------------------------
+# DISCOVERY
+# -------------------------
+
+# T1046: TCP SYN scan (burst)
+alert tcp any any -> any 1:65535 (
+  msg:"[T1046] TCP SYN scan (burst)";
+  flags:S; flow:stateless;
+  detection_filter:track by_src, count 20, seconds 60;
+  classtype:attempted-recon;
+  sid:2401046; rev:2;
+)
+
+# T1046: UDP scan (burst)
+alert udp any any -> any 1:65535 (
+  msg:"[T1046] UDP scan (burst)";
+  flow:stateless;
+  detection_filter:track by_src, count 30, seconds 60;
+  classtype:attempted-recon;
+  sid:2402046; rev:2;
+)
+
+# T1018: ICMP echo sweep
+alert icmp any any -> any any (
+  msg:"[T1018] ICMP Echo sweep";
+  itype:8;
+  detection_filter:track by_src, count 10, seconds 60;
+  classtype:attempted-recon;
+  sid:2401018; rev:2;
+)
+
+# T1049: NBNS (UDP/137)
+alert udp any any -> any 137 (
+  msg:"[T1049] NBNS name service discovery";
+  detection_filter:track by_src, count 1, seconds 30;
+  classtype:attempted-recon;
+  sid:2401049; rev:2;
+)
+
+# T1049: LLMNR (UDP/5355)
+alert udp any any -> any 5355 (
+  msg:"[T1049] LLMNR name query";
+  detection_filter:track by_src, count 1, seconds 30;
+  classtype:attempted-recon;
+  sid:2401050; rev:2;
+)
+
+# -------------------------
+# C2 / WEB PROTOCOLS (T1071.001) — UA patterns
+# -------------------------
+
+alert tcp any any -> any any (
+  msg:"[T1071.001] Suspicious UA (curl)";
+  flow:to_server,established;
+  content:"User-Agent|3a 20|curl";
+  classtype:bad-unknown;
+  sid:2401701; rev:2;
+)
+
+alert tcp any any -> any any (
+  msg:"[T1071.001] Suspicious UA (Wget)";
+  flow:to_server,established;
+  content:"User-Agent|3a 20|Wget";
+  classtype:bad-unknown;
+  sid:2401702; rev:2;
+)
+
+alert tcp any any -> any any (
+  msg:"[T1071.001] Suspicious UA (WindowsPowerShell)";
+  flow:to_server,established;
+  content:"User-Agent|3a 20|WindowsPowerShell";
+  classtype:bad-unknown;
+  sid:2401703; rev:2;
+)
+
+alert tcp any any -> any any (
+  msg:"[T1071.001] Suspicious UA (HttpBrowser)";
+  flow:to_server,established;
+  content:"User-Agent|3a 20|HttpBrowser";
+  classtype:bad-unknown;
+  sid:2401704; rev:2;
+)
+
+alert tcp any any -> any any (
+  msg:"[T1071.001] Suspicious UA (Go-http-client/1.1)";
+  flow:to_server,established;
+  content:"User-Agent|3a 20|Go-http-client/1.1";
+  classtype:bad-unknown;
+  sid:2401705; rev:2;
+)
+
+# -------------------------
+# EXFIL (T1041), COLLECTION (T1005, T1113), IMPACT (T1486)
+# -------------------------
+
+# T1041: Large HTTP POST (>=100k)
+alert tcp any any -> any any (
+  msg:"[T1041] Large HTTP POST (possible data exfil)";
+  flow:to_server,established;
+  pcre:"/POST.*Content-Length\x3a\s(100000|[1-9]\d{5,})/si";
+  classtype:misc-activity;
+  sid:2401041; rev:2;
+)
+
+# T1005: Upload με filename-indicators (έγγραφα/αρχεία)
+alert tcp any any -> any any (
+  msg:"[T1005] HTTP exfil of local docs (filename indicator)";
+  flow:to_server,established;
+  content:"filename=";
+  pcre:"/filename\s*=\s*\"?.*\.(docx|xlsx|pdf|pst|zip|7z|rar)\"?/i";
+  classtype:misc-activity;
+  sid:2401005; rev:2;
+)
+
+# T1113: Upload με screenshot filename
+alert tcp any any -> any any (
+  msg:"[T1113] Upload contains screenshot filename";
+  flow:to_server,established;
+  content:"filename=";
+  pcre:"/filename\s*=\s*\"?(screen(cap|shot)[^\"]*)\"?/i";
+  classtype:misc-activity;
+  sid:2401113; rev:2;
+)
+
+# T1486: Upload encrypted-looking extensions
+alert tcp any any -> any any (
+  msg:"[T1486] Upload of encrypted-looking extension (.locked/.encrypted/.enc)";
+  flow:to_server,established;
+  content:"filename=";
+  pcre:"/filename\s*=\s*\"?.*\.(locked|encrypted|enc)\"?/i";
+  classtype:misc-activity;
+  sid:2401486; rev:2;
+)
+
+# -------------------------
+# CALDERA / SANDCAT IOCs (8888)
+# -------------------------
+
+# Beacon endpoint hit
+alert tcp any any -> any 8888 (
+  msg:"[Caldera] Beacon endpoint hit (/beacon)";
+  flow:to_server,established;
+  content:"/beacon";
+  classtype:bad-unknown;
+  sid:2409001; rev:3;
+)
+
+# /file/download with platform: linux
+alert tcp any any -> any 8888 (
+  msg:"[Caldera] /file/download with platform: linux";
+  flow:to_server,established;
+  pcre:"/\/file\/download.*platform\s*[:=]\s*linux/i";
+  classtype:bad-unknown;
+  sid:2409002; rev:3;
+)
+
+# /file/download with platform: windows
+alert tcp any any -> any 8888 (
+  msg:"[Caldera] /file/download with platform: windows";
+  flow:to_server,established;
+  pcre:"/\/file\/download.*platform\s*[:=]\s*windows/i";
+  classtype:bad-unknown;
+  sid:2409003; rev:3;
+)
+
+# Header/file hint: sandcat.go
+alert tcp any any -> any 8888 (
+  msg:"[Caldera] header file: sandcat.go";
+  flow:to_server,established;
+  pcre:"/file:\s*sandcat\.go/i";
+  classtype:bad-unknown;
+  sid:2409004; rev:3;
+)
+
+# -------------------------
+# ATOMIC (Linux-centric payload artefacts — ενδεικτικά)
+# -------------------------
+
+# T1105: Host header προς raw.githubusercontent.com
+alert tcp any any -> any any (
+  msg:"[T1105] Remote File Download (raw.githubusercontent.com)";
+  flow:to_server,established;
+  content:"Host|3a 20|raw.githubusercontent.com";
+  classtype:bad-unknown;
+  sid:2401105; rev:2;
+)
+
+# T1027: base64 -d
+alert tcp any any -> any any (
+  msg:"[T1027] Base64 decoding pattern (base64 -d)";
+  content:"base64 -d";
+  classtype:misc-activity;
+  sid:2402001; rev:2;
+)
+
+# T1053.003: /etc/cron.
+alert tcp any any -> any any (
+  msg:"[T1053.003] Possible cron file reference";
+  content:"/etc/cron.";
+  classtype:policy-violation;
+  sid:2402002; rev:2;
+)
+
+# T1070.003: .bash_history
+alert tcp any any -> any any (
+  msg:"[T1070.003] .bash_history modification attempt (indicator)";
+  content:".bash_history";
+  classtype:misc-activity;
+  sid:2402003; rev:2;
+)
+
+# T1059.004: /bin/bash
+alert tcp any any -> any any (
+  msg:"[T1059.004] Bash execution indicator (/bin/bash)";
+  content:"/bin/bash";
+  classtype:shellcode-detect;
+  sid:2402004; rev:2;
+)
+
+# T1033: whoami
+alert tcp any any -> any any (
+  msg:"[T1033] whoami execution (indicator)";
+  content:"whoami";
+  classtype:misc-activity;
+  sid:2402005; rev:2;
+)
+
+# T1082: uname -a
+alert tcp any any -> any any (
+  msg:"[T1082] System info discovery (uname -a)";
+  content:"uname -a";
+  classtype:misc-activity;
+  sid:2402006; rev:2;
+)
+
+# T1518.001: ps aux
+alert tcp any any -> any any (
+  msg:"[T1518.001] Security software discovery (ps aux)";
+  content:"ps aux";
+  classtype:misc-activity;
+  sid:2402007; rev:2;
+)
+
+# T1119: zip
+alert tcp any any -> any any (
+  msg:"[T1119] File archiving activity (zip)";
+  content:"zip";
+  classtype:misc-activity;
+  sid:2402008; rev:2;
+)
