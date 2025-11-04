@@ -7,8 +7,6 @@
   <rule id="100011" level="6">
     <if_sid>80700</if_sid>
     <field name="audit.command">whoami</field>
-    <!-- προαιρετικά αν θες να φιλτράρεις και με το key -->
-    <!-- <field name="audit.key">whoami_exec|all_execs</field> -->
     <description>[T1033] whoami execution detected via auditd</description>
     <group>attack,discovery,linux,auditd</group>
   </rule>
