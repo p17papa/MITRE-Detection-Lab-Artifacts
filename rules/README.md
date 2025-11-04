@@ -1,4 +1,4 @@
-# — Custom detection rules
+# Custom detection rules
 
 Αυτός ο φάκελος περιέχει τα custom detection rules που χρησιμοποιήθηκαν για
 την αξιολόγηση MITRE/Atomic & CALDERA (network + host).
